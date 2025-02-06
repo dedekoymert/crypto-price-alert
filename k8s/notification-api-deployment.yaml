@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-api
+  template:
+    metadata:
+      labels:
+        app: notification-api
+    spec:
+      containers:
+        - name: notification-api
+          image: notification-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3003
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+          env:
+            - name: MONGO_URI
+              value: "mongodb://admin:password@mongodb-service:27017/crypto-alerts?authSource=admin"
+            - name: KAFKA_BROKER
+              value: "crypto-alert-kafka.kafka.svc.cluster.local:9092"
+            - name: KAFKA_USER
+              value: "user"
+            - name: KAFKA_PASSWORD
+              value: "password"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-api-service
+spec:
+  type: ClusterIP
+  selector:
+    app: notification-api
+  ports:
+    - protocol: TCP
+      port: 3003
+      targetPort: 3003

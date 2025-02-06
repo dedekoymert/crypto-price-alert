@@ -35,7 +35,6 @@ error.log
 .dockerignore
 **/.dockerignore
 
-**/k8s/
 **/helm-charts/
 
 .DS_Store

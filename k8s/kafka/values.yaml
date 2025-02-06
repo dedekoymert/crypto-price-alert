@@ -1,0 +1,12 @@
+provisioning:
+  enabled: true
+  numPartitions: 3
+  replicationFactor: 1
+  topics:
+    - name: coin-asset-change
+    - name: price-update
+sasl:
+  client:
+    users:
+      - user
+    passwords: "password"

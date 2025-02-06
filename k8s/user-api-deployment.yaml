@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-api
+  template:
+    metadata:
+      labels:
+        app: user-api
+    spec:
+      containers:
+        - name: user-api
+          image: user-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+          env:
+            - name: MONGO_URI
+              value: "mongodb://admin:password@mongodb-service:27017/crypto-alerts?authSource=admin"
+            - name: JWT_SECRET
+              value: "63f10a434a343cd2e7f41dc4da43bc1b2fedc31d724037c692c83674e020531077d28b46f69fd76c715338a53683cdaeadfd4c036a6672cd8219e849736e1709"
+            - name: COIN_API_URL
+              value: "https://rest.coinapi.io/v1/exchangerate"
+            - name: COIN_API_KEY
+              value: {KEY}
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: KAFKA_BROKER
+              value: "crypto-alert-kafka.kafka.svc.cluster.local:9092"
+            - name: KAFKA_USER
+              value: "user"
+            - name: KAFKA_PASSWORD
+              value: "password"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-api-service
+spec:
+  type: NodePort
+  selector:
+    app: user-api
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      nodePort: 30008 

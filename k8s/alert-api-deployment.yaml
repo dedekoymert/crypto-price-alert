@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alert-api
+  template:
+    metadata:
+      labels:
+        app: alert-api
+    spec:
+      containers:
+        - name: alert-api
+          image: alert-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3002
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+          env:
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: KAFKA_BROKER
+              value: "crypto-alert-kafka.kafka.svc.cluster.local:9092"
+            - name: KAFKA_USER
+              value: "user"
+            - name: KAFKA_PASSWORD
+              value: "password"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-api-service
+spec:
+  type: ClusterIP
+  selector:
+    app: alert-api
+  ports:
+    - protocol: TCP
+      port: 3002
+      targetPort: 3002
