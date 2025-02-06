@@ -1,0 +1,12 @@
+{
+  "name": "coin-app",
+  "version": "1.0.0",
+  "workspaces": [
+    "shared",
+    "user-api",
+    "crypto-api",
+    "alert-api",
+    "notification-api"
+  ],
+  "private": true
+}
