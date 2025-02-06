@@ -1,8 +1,0 @@
-version: '3.8'
-services:
-  user-api:
-    build: ./user-api
-    ports:
-      - "3000:3000"
-    environment:
-      MONGO_URI: "mongodb://mongodb:27017/crypto-alerts"
