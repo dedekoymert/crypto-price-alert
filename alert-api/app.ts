@@ -1,10 +1,13 @@
 import { connectKafka } from './src/config/kafka';
 import startConsumer from './src/services/kafkaService';
-import logger from '../shared/utils/logger';
+import redis from '../shared/config/redis';
+import { kafkaClient, producer } from './src/config/kafka';
+
 
 const startApp = async () => {
   await connectKafka();
-  await startConsumer();
+  const consumer = kafkaClient.consumer({ groupId: 'alert-api-group' });
+  await startConsumer(consumer, producer, redis);
 };
 
 startApp();

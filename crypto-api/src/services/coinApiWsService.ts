@@ -1,18 +1,31 @@
 import WebSocket from 'ws';
 import logger from '../../../shared/utils/logger'
-import KafkaService from './kafkaService';
-import redis from '../../../shared/config/redis';
+import { IKafkaService } from './kafkaService';
+import Redis from 'ioredis';
 
 const COIN_API_WS_URL = process.env.COIN_API_WS_URL || 'wss://ws.coinapi.io/v1/';
 const API_KEY = process.env.COIN_API_KEY;
 
-class CoinApiWsService {
+export interface ICoinApiWsService {
+  connect(): void;
+  sendSubscriptionMessage(assetIdBase: string, assetIdQuote: string): void;
+  sendUnsubscribeMessage(assetIdBase: string, assetIdQuote: string): void;
+}
+
+export class CoinApiWsService implements ICoinApiWsService {
   private ws: WebSocket | null = null;
+  private redis: Redis;
+
   private readonly coinApiUrl = COIN_API_WS_URL;
   private readonly apiKey = API_KEY;
   private readonly maxReconnectAttempts = 5;
   private reconnectAttempts = 0;
   private readonly cachePrefix = 'active-alerts:';
+  
+  constructor(redis: Redis) {
+    this.redis = redis;
+    this.connect()
+  }
 
   public connect() {
     this.ws = new WebSocket(this.coinApiUrl, {
@@ -41,7 +54,7 @@ class CoinApiWsService {
     const parsedData = JSON.parse(data);
     if (parsedData.type === 'trade') {
       const parts = parsedData.symbol_id.split('_');
-      KafkaService.publishPriceUpdate(parts[2], parts[3], parsedData.price, parsedData.time_exchange);
+      this.kafkaService.publishPriceUpdate(parts[2], parts[3], parsedData.price, parsedData.time_exchange);
     }
   }
 
@@ -86,7 +99,7 @@ class CoinApiWsService {
   }
 
   private async updateSubscriptions() {
-    const keys = await redis.keys(`${this.cachePrefix}*`);
+    const keys = await this.redis.keys(`${this.cachePrefix}*`);
     const pairs = keys.map((key) => {
       const parts = key.split(':');
       return { assetIdBase: parts[1], assetIdQuote: parts[2] };
@@ -97,6 +110,9 @@ class CoinApiWsService {
     });
   }
 
+  set kafkaService(kafkaService: IKafkaService) {
+    this.kafkaService = kafkaService
+  }
+
 }
 
-export default new CoinApiWsService();

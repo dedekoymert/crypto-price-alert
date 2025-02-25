@@ -9,6 +9,7 @@ import morgan from 'morgan';
 import { swaggerDocs, swaggerUi } from './swagger';
 import { connectKafka } from './src/config/kafka';
 import notificationRoutes from './src/routes/notificationRoutes';
+import errorMiddleware from './src/middlewares/errorMiddleware';
 
 dotenv.config();
 
@@ -24,6 +25,8 @@ app.use(morgan('combined'))
 app.use('/user-api/auth', authRoutes);
 app.use('/user-api/alerts', alertRoutes);
 app.use('/user-api/notifications', notificationRoutes);
+
+app.use(errorMiddleware);
 
 (async () => {
   await connectDB();

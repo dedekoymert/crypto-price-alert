@@ -1,14 +1,17 @@
-import { Consumer } from 'kafkajs';
+import { Consumer, Kafka } from 'kafkajs';
 import logger from '../../../shared/utils/logger';
-import { kafkaClient } from '../config/kafka';
 import Notification from '../../../shared/models/Notification';
 import Alert from '../../../shared/models/Alert';
 
-class NotificationConsumerService {
+export interface INotificationConsumerService {
+  startConsumer(): void;
+}
+
+export class NotificationConsumerService {
   private consumer: Consumer;
   private readonly alertNotificationTopic: string = 'alert-notification';
 
-  constructor() {
+  constructor(kafkaClient: Kafka) {
     this.consumer = kafkaClient.consumer({ groupId: 'notification-api-group' });
   }
 
@@ -27,8 +30,11 @@ class NotificationConsumerService {
 
   private async createNotification(alertData: any) {
     try {
-      const alert = await Alert.findByIdAndUpdate(
-        alertData._id,
+      const alert = await Alert.findOneAndUpdate(
+        { 
+          _id: alertData._id,
+          status: "active"
+        },
         { status: "notActive" },
         { new: true }
       ).exec();
@@ -52,4 +58,3 @@ class NotificationConsumerService {
   }
 }
 
-export default new NotificationConsumerService();

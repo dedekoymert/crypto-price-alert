@@ -1,15 +1,13 @@
 import logger from '../../../shared/utils/logger';
-import { kafkaClient } from '../config/kafka';
-import { producer } from '../config/kafka';
-import redis from '../../../shared/config/redis';
+import { Consumer, Producer } from 'kafkajs';
+import Redis from 'ioredis';
 
-const consumer = kafkaClient.consumer({ groupId: 'alert-api-group' });
 
 const PRICE_UPDATE_TOPIC = 'price-update';
 const ALERT_NOTIFICATION_TOPIC = 'alert-notification';
 const CACHE_PREFIX = 'active-alerts:';
 
-const startConsumer = async () => {
+const startConsumer = async (consumer: Consumer, producer: Producer, redis: Redis) => {
   await consumer.connect();
   await consumer.subscribe({ topic: PRICE_UPDATE_TOPIC, fromBeginning: false });
 

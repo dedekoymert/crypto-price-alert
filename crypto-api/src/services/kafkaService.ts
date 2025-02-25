@@ -1,29 +1,37 @@
-import { producer } from '../config/kafka';
-import { kafkaClient } from '../config/kafka';
-import CoinApiWsService from './coinApiWsService';
 import logger from '../../../shared/utils/logger';
+import { Kafka, Producer } from 'kafkajs';
+import { ICoinApiWsService } from './coinApiWsService';
 
-class KafkaService {
+export interface IKafkaService {
+  startConsumer(): Promise<void>;
+  publishPriceUpdate(assetIdBase: string, assetIdQuote: string, price: number, timeExchange: string): Promise<void>;
+}
+
+export class KafkaService implements IKafkaService {
   private readonly coinAsssetChangeTopic = 'coin-asset-change';
   private readonly priceUpdateTopic = 'price-update';
+  private kafkaClient: Kafka;
+  private producer: Producer;
 
-  constructor() {
+  constructor(kafkaClient: Kafka, producer: Producer) {
+    this.kafkaClient = kafkaClient;
+    this.producer = producer;
   }
 
   public async startConsumer(): Promise<void> {
-    const consumer = kafkaClient.consumer({ groupId: 'crypto-api-ws-change' });
+    const consumer = this.kafkaClient.consumer({ groupId: 'crypto-api-ws-change' });
     await consumer.connect();
     await consumer.subscribe({ topic: this.coinAsssetChangeTopic, fromBeginning: false });
 
     await consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
+      eachMessage: async ({ message }) => {
         try {
           const { assetIdBase, assetIdQuote, operation } = JSON.parse(message.value!.toString() );
 
           if (operation === 'add') {
-            CoinApiWsService.sendSubscriptionMessage(assetIdBase, assetIdQuote);
+            this.coinApiWsService.sendSubscriptionMessage(assetIdBase, assetIdQuote);
           } else if (operation === 'remove') {
-            CoinApiWsService.sendUnsubscribeMessage(assetIdBase, assetIdQuote);
+            this.coinApiWsService.sendUnsubscribeMessage(assetIdBase, assetIdQuote);
           }
 
         } catch (error) {
@@ -39,12 +47,14 @@ class KafkaService {
       value: JSON.stringify({ assetIdBase, assetIdQuote, price, timeExchange}),
     };
 
-    await producer.send({
+    await this.producer.send({
       topic: this.priceUpdateTopic,
       messages: [message],
     });
     logger.info(message);
   }
-}
 
-export default new KafkaService();
+  set coinApiWsService(coinApiWsService: ICoinApiWsService) {
+    this.coinApiWsService = coinApiWsService;
+  }
+}
